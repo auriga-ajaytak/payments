@@ -103,7 +103,8 @@ class RazorpaySettings(Document):
 					),
 				)
 			except Exception:
-				frappe.throw(_("Seems API Key or API Secret is wrong !!!"))
+				pass
+				# frappe.throw(_("Seems API Key or API Secret is wrong !!!"))
 
 	def validate_transaction_currency(self, currency):
 		if currency not in self.supported_currencies:
@@ -414,6 +415,7 @@ def capture_payment(is_sandbox=False, sanbox_response=None):
 @frappe.whitelist(allow_guest=True)
 def get_api_key():
 	controller = frappe.get_doc("Razorpay Settings")
+	print("Get- api called")
 	return controller.api_key
 
 

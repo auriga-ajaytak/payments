@@ -22,9 +22,10 @@ expected_keys = (
 
 
 def get_context(context):
+	print("context",frappe.form_dict["company"])
 	context.no_cache = 1
-	context.api_key = get_api_key()
-
+	context.api_key = get_api_key(company=frappe.form_dict["company"])
+	
 	try:
 		doc = frappe.get_doc("Integration Request", frappe.form_dict["token"])
 		payment_details = json.loads(doc.data)
@@ -33,6 +34,7 @@ def get_context(context):
 			context[key] = payment_details[key]
 
 		context["token"] = frappe.form_dict["token"]
+		context["company"] = frappe.form_dict["company"]
 		context["amount"] = flt(context["amount"])
 		context["subscription_id"] = (
 			payment_details["subscription_id"] if payment_details.get("subscription_id") else ""
@@ -50,16 +52,22 @@ def get_context(context):
 		raise frappe.Redirect
 
 
-def get_api_key():
-	api_key = frappe.db.get_single_value("Razorpay Settings", "api_key")
-	if cint(frappe.form_dict.get("use_sandbox")):
-		api_key = frappe.conf.sandbox_api_key
+def get_api_key(company=None):
+	# api_key = frappe.db.get_single_value("Razorpay Settings", "api_key")
+	try:
+		api_key = frappe.db.get_value("Company RazorPay", {"company":company}, "api_key")
+		print("get_api_key",api_key)
+		print(frappe.form_dict.get("use_sandbox"))
+		if cint(frappe.form_dict.get("use_sandbox")):
+			api_key = frappe.conf.sandbox_api_key
 
-	return api_key
+		return api_key
+	except:
+		frappe.throw("Payment gateway not found for School")
 
 
 @frappe.whitelist(allow_guest=True)
-def make_payment(razorpay_payment_id, options, reference_doctype, reference_docname, token):
+def make_payment(razorpay_payment_id, options, reference_doctype, reference_docname, token,company):
 	data = {}
 
 	if isinstance(options, str):
@@ -71,9 +79,16 @@ def make_payment(razorpay_payment_id, options, reference_doctype, reference_docn
 			"reference_docname": reference_docname,
 			"reference_doctype": reference_doctype,
 			"token": token,
+			"company": company,
 		}
 	)
+	doc_name = frappe.db.get_value("Company RazorPay", {"company":company}, )
+	if doc_name:
+		doc = frappe.get_doc("Company RazorPay", doc_name)
+		print(doc)
+	else:
+		frappe.throw("Payment gateway not found for School")
 
-	data = frappe.get_doc("Razorpay Settings").create_request(data)
+	data = doc.create_request(data)
 	frappe.db.commit()
 	return data

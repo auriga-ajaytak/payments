@@ -1,4 +1,5 @@
 $(document).ready(function(){
+	
 	(function(e){
 		var options = {
 			"key": "{{ api_key }}",
@@ -8,7 +9,7 @@ $(document).ready(function(){
 			"description": "{{ description }}",
 			"subscription_id": "{{ subscription_id }}",
 			"handler": function (response){
-				razorpay.make_payment_log(response, options, "{{ reference_doctype }}", "{{ reference_docname }}", "{{ token }}");
+				razorpay.make_payment_log(response, options, "{{ reference_doctype }}", "{{ reference_docname }}", "{{ token }}", "{{ company }}");
 			},
 			"prefill": {
 				"name": "{{ payer_name }}",
@@ -19,6 +20,9 @@ $(document).ready(function(){
 		};
 
 		var rzp = new Razorpay(options);
+		console.log("razorpay page called")
+		const params = frappe.utils.get_query_params();
+		console.log("params",params)
 		rzp.open();
 		//	e.preventDefault();
 	})();
@@ -26,7 +30,7 @@ $(document).ready(function(){
 
 frappe.provide('razorpay');
 
-razorpay.make_payment_log = function(response, options, doctype, docname, token){
+razorpay.make_payment_log = function(response, options, doctype, docname, token,company){
 	$('.razorpay-loading').addClass('hidden');
 	$('.razorpay-confirming').removeClass('hidden');
 
@@ -39,7 +43,8 @@ razorpay.make_payment_log = function(response, options, doctype, docname, token)
 			"options": options,
 			"reference_doctype": doctype,
 			"reference_docname": docname,
-			"token": token
+			"token": token,
+			"company": company
 		},
 		callback: function(r){
 			if (r.message && r.message.status == 200) {
